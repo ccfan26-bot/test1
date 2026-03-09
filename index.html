@@ -15,15 +15,13 @@ content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalabl
   --bg: #e9ebee;
 }
 
-/* ✅ 页面背景灰色 */
 body {
   margin: 0;
   background: var(--bg);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  overflow: hidden; /* ✅ 禁止整体滚动 */
+  overflow: hidden;
 }
 
-/* ✅ 固定主容器，防止键盘撑高 */
 .container {
   position: fixed;
   inset: 0;
@@ -32,7 +30,6 @@ body {
   align-items: center;
 }
 
-/* ✅ 中间卡片缩窄 */
 .chat-wrapper {
   width: 100%;
   max-width: 720px;
@@ -43,23 +40,18 @@ body {
   box-shadow: 0 0 40px rgba(0,0,0,0.05);
 }
 
-/* ✅ 毛玻璃顶部 */
 header {
   position: sticky;
   top: 0;
   z-index: 10;
-
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   background: rgba(255,255,255,0.7);
-
   text-align: center;
   padding: 16px 0;
   font-weight: 600;
   border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
-/* ✅ 只让聊天区滚动 */
 #chat {
   flex: 1;
   overflow-y: auto;
@@ -69,13 +61,13 @@ header {
   gap: 14px;
 }
 
-/* ✅ 气泡 */
 .bubble {
   max-width: 85%;
   padding: 12px 14px;
   border-radius: 18px;
   line-height: 1.6;
   word-wrap: break-word;
+  position: relative;
 }
 
 .user {
@@ -92,15 +84,45 @@ header {
   border-bottom-left-radius: 6px;
 }
 
-/* ✅ 输入区毛玻璃 */
+/* ✅ 三点按钮 */
+.menu-btn {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 14px;
+  color: #999;
+  cursor: pointer;
+}
+
+/* ✅ 弹出菜单 */
+.menu {
+  position: absolute;
+  top: 26px;
+  right: 8px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  font-size: 14px;
+  overflow: hidden;
+  z-index: 100;
+}
+
+.menu div {
+  padding: 8px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menu div:hover {
+  background: #f5f5f5;
+}
+
 #inputArea {
   position: sticky;
   bottom: 0;
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   background: rgba(255,255,255,0.8);
   border-top: 1px solid rgba(0,0,0,0.05);
-
   display: flex;
   padding: 14px;
   gap: 8px;
@@ -127,7 +149,7 @@ button {
   font-size: 15px;
 }
 
-/* ✅ thinking */
+/* thinking */
 .thinking {
   display: flex;
   gap: 5px;
@@ -180,6 +202,7 @@ textarea.addEventListener("input", () => {
   textarea.style.height = textarea.scrollHeight + "px";
 });
 
+/* ✅ 发送 */
 async function send() {
   if (loading) return;
   const message = textarea.value.trim();
@@ -205,8 +228,8 @@ async function send() {
 
     conversation.push({ role: "assistant", content: data.reply });
 
-    if (conversation.length > 10) {
-      conversation = conversation.slice(-10);
+    if (conversation.length > 20) {
+      conversation = conversation.slice(-20);
     }
 
     renderChat();
@@ -218,22 +241,101 @@ async function send() {
   loading = false;
 }
 
+/* ✅ 渲染 */
 function renderChat() {
   const chat = document.getElementById("chat");
   chat.innerHTML = "";
 
-  conversation.forEach(msg => {
+  conversation.forEach((msg, index) => {
     const div = document.createElement("div");
     div.className = "bubble " + msg.role;
+
     div.innerHTML = msg.role === "assistant"
       ? marked.parse(msg.content)
       : msg.content;
+
+    const menuBtn = document.createElement("div");
+    menuBtn.className = "menu-btn";
+    menuBtn.innerText = "⋯";
+    menuBtn.onclick = (e) => {
+      e.stopPropagation();
+      showMenu(index, div);
+    };
+
+    div.appendChild(menuBtn);
     chat.appendChild(div);
   });
 
   chat.scrollTop = chat.scrollHeight;
 }
 
+/* ✅ 菜单 */
+function showMenu(index, bubble) {
+  removeExistingMenu();
+
+  const menu = document.createElement("div");
+  menu.className = "menu";
+
+  const copyOne = document.createElement("div");
+  copyOne.innerText = "复制此条";
+  copyOne.onclick = () => {
+    copyText(conversation[index].content);
+    removeExistingMenu();
+  };
+
+  const copyAll = document.createElement("div");
+  copyAll.innerText = "复制全部对话";
+  copyAll.onclick = () => {
+    const full = conversation
+      .map(m => `${m.role === "user" ? "用户" : "AI"}: ${stripHtml(m.content)}`)
+      .join("\n\n");
+    copyText(full);
+    removeExistingMenu();
+  };
+
+  const share = document.createElement("div");
+  share.innerText = "系统分享";
+  share.onclick = () => {
+    shareText(conversation[index].content);
+    removeExistingMenu();
+  };
+
+  menu.appendChild(copyOne);
+  menu.appendChild(copyAll);
+  menu.appendChild(share);
+
+  bubble.appendChild(menu);
+  document.addEventListener("click", removeExistingMenu);
+}
+
+function removeExistingMenu() {
+  const old = document.querySelector(".menu");
+  if (old) old.remove();
+}
+
+function stripHtml(html) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return tmp.innerText;
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(stripHtml(text));
+  alert("已复制");
+}
+
+async function shareText(text) {
+  if (navigator.share) {
+    await navigator.share({
+      title: "TESTAI 对话",
+      text: stripHtml(text)
+    });
+  } else {
+    copyText(text);
+  }
+}
+
+/* ✅ thinking */
 function showThinking() {
   const chat = document.getElementById("chat");
   const div = document.createElement("div");
