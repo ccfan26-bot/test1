@@ -52,8 +52,6 @@ let conversation = [];
 
 async function send() {
   const input = document.getElementById("input");
-  const chatDiv = document.getElementById("chat");
-
   const message = input.value.trim();
   if (!message) return;
 
@@ -63,8 +61,10 @@ async function send() {
     content: message
   });
 
-  renderChat();
+  // ✅ 只保留最近 5 轮（10 条消息）
+  conversation = conversation.slice(-10);
 
+  renderChat();
   input.value = "";
 
   try {
@@ -86,6 +86,9 @@ async function send() {
       role: "assistant",
       content: data.reply
     });
+
+    // ✅ 再次裁剪（防止超过 10 条）
+    conversation = conversation.slice(-10);
 
     renderChat();
 
@@ -115,3 +118,4 @@ function clearChat() {
 
 </body>
 </html>
+
