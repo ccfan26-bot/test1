@@ -2,23 +2,20 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Poe Claude Chat</title>
 
-  <style>
-    :root {
-      --bg: #f2f2f7;
-      --user: #007aff;
-      --assistant: #e5e5ea;
-    }
+  <!-- ✅ Markdown 解析库 -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+  <style>
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
+      background: #f2f2f7;
       display: flex;
       flex-direction: column;
-      height: 100dvh; /* ✅ 适配手机地址栏变化 */
+      height: 100dvh;
     }
 
     header {
@@ -29,7 +26,6 @@
       border-bottom: 1px solid #ddd;
     }
 
-    /* ✅ 聊天区域 */
     #chat {
       flex: 1;
       overflow-y: auto;
@@ -40,29 +36,26 @@
     }
 
     .bubble {
-      max-width: 80%;
-      padding: 10px 14px;
-      border-radius: 18px;
-      line-height: 1.4;
-      word-wrap: break-word;
+      max-width: 85%;
+      padding: 12px;
+      border-radius: 16px;
+      line-height: 1.5;
       font-size: 15px;
+      word-wrap: break-word;
     }
 
     .user {
       align-self: flex-end;
-      background: var(--user);
+      background: #007aff;
       color: white;
-      border-bottom-right-radius: 4px;
     }
 
     .assistant {
       align-self: flex-start;
-      background: var(--assistant);
+      background: white;
       color: black;
-      border-bottom-left-radius: 4px;
     }
 
-    /* ✅ 输入区域 */
     #inputArea {
       display: flex;
       padding: 10px;
@@ -75,11 +68,9 @@
       flex: 1;
       resize: none;
       padding: 10px;
-      font-size: 16px; /* ✅ 防止 iOS 自动缩放 */
+      font-size: 16px;
       border-radius: 12px;
       border: 1px solid #ccc;
-      outline: none;
-      max-height: 120px;
     }
 
     button {
@@ -91,8 +82,30 @@
       font-size: 15px;
     }
 
-    button:active {
-      opacity: 0.7;
+    /* ✅ Markdown 样式优化 */
+    .assistant pre {
+      background: #1e1e1e;
+      color: #eee;
+      padding: 10px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    .assistant code {
+      background: #eee;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .assistant h1,
+    .assistant h2,
+    .assistant h3 {
+      margin-top: 10px;
+    }
+
+    .assistant ul {
+      padding-left: 20px;
     }
   </style>
 </head>
@@ -115,11 +128,7 @@ async function send() {
   const message = input.value.trim();
   if (!message) return;
 
-  conversation.push({
-    role: "user",
-    content: message
-  });
-
+  conversation.push({ role: "user", content: message });
   renderChat();
   input.value = "";
 
@@ -131,11 +140,6 @@ async function send() {
     });
 
     const data = await response.json();
-
-    if (!response.ok) {
-      alert("Error: " + JSON.stringify(data));
-      return;
-    }
 
     conversation.push({
       role: "assistant",
@@ -162,14 +166,21 @@ function renderChat() {
   conversation.forEach(msg => {
     const div = document.createElement("div");
     div.className = "bubble " + msg.role;
-    div.innerText = msg.content;
+
+    if (msg.role === "assistant") {
+      // ✅ Markdown 转 HTML
+      div.innerHTML = marked.parse(msg.content);
+    } else {
+      div.innerText = msg.content;
+    }
+
     chatDiv.appendChild(div);
   });
 
   chatDiv.scrollTop = chatDiv.scrollHeight;
 }
 
-/* ✅ Enter 发送，Shift+Enter 换行 */
+// ✅ Enter 发送
 document.getElementById("input").addEventListener("keydown", function(e) {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
